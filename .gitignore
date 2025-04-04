@@ -1,0 +1,21 @@
+# Node.js dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# Test outputs
+coverage/
+junit.xml
+
+# Local Azure Functions emulator files
+local.settings.json
+.func/
+
+# IDE files
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db 

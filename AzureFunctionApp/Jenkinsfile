@@ -1,0 +1,98 @@
+pipeline {
+    agent any
+    
+    // Define environment variables that will be used throughout the pipeline
+    environment {
+        // These should be configured as Jenkins credentials
+        AZURE_CLIENT_ID = credentials('AZURE_CLIENT_ID')
+        AZURE_CLIENT_SECRET = credentials('AZURE_CLIENT_SECRET')
+        AZURE_TENANT_ID = credentials('AZURE_TENANT_ID')
+        RESOURCE_GROUP = credentials('AZURE_RESOURCE_GROUP')
+        FUNCTION_APP_NAME = credentials('AZURE_FUNCTION_APP_NAME')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                dir('AzureFunctionApp') {
+                    script {
+                        echo 'Building the application...'
+                        sh 'npm install'
+                        sh 'npm run build'
+                    }
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                dir('AzureFunctionApp') {
+                    script {
+                        echo 'Running tests...'
+                        sh 'npm test'
+                    }
+                }
+            }
+            post {
+                always {
+                    junit 'AzureFunctionApp/junit.xml'
+                }
+            }
+        }
+        
+        stage('Package') {
+            steps {
+                dir('AzureFunctionApp') {
+                    script {
+                        echo 'Creating deployment package...'
+                        sh 'npm run zip'
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    echo 'Deploying to Azure...'
+                    // Login to Azure using service principal
+                    sh """
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        az account show
+                    """
+                    
+                    // Deploy the function to Azure
+                    dir('AzureFunctionApp') {
+                        sh """
+                            az functionapp deployment source config-zip \
+                            --resource-group $RESOURCE_GROUP \
+                            --name $FUNCTION_APP_NAME \
+                            --src dist/function.zip
+                        """
+                    }
+                    
+                    // Verify deployment
+                    sh """
+                        echo "Verifying deployment..."
+                        az functionapp list --resource-group $RESOURCE_GROUP --query "[?name=='$FUNCTION_APP_NAME'].{Name:name, State:state}" -o table
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "CI/CD Pipeline completed successfully!"
+        }
+        failure {
+            echo "CI/CD Pipeline failed!"
+        }
+    }
+} 

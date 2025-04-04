@@ -1,0 +1,30 @@
+{
+  "name": "azure-function-hello-world",
+  "version": "1.0.0",
+  "description": "A simple Hello World Azure Function",
+  "main": "index.js",
+  "scripts": {
+    "start": "func start",
+    "test": "jest --ci --reporters=default --reporters=jest-junit",
+    "build": "echo 'Building package...'",
+    "zip": "mkdir -p dist && zip -r dist/function.zip . -x \"node_modules/*\" \"test/*\" \"dist/*\" \".git/*\""
+  },
+  "keywords": [
+    "azure",
+    "functions"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/functions": "^3.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "jest-junit": "^16.0.0",
+    "supertest": "^6.3.3"
+  },
+  "jest-junit": {
+    "outputDirectory": ".",
+    "outputName": "junit.xml"
+  }
+} 
